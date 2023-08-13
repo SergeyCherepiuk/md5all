@@ -4,7 +4,7 @@ Blazingly fast cli application for checking md5 sum of a specific file or direct
 
 ## How to run it?
 
-Execute the program by running the binary file with the command below (you can replace `./go.mod` with any other filename or path):
+Print md5 sums to the terminal by running the binary file with the following command (you can replace `./go.mod` with any other filename or path):
 
 ```shell
 ./cmd/main ./go.mod
@@ -14,6 +14,12 @@ Output:
 
 ```
 ./go.mod -> 451a40ce008a3493e35efdd45b224352
+```
+
+Or save the output onto the file:
+
+```shell
+./cmd/main ./go.mod > output.txt
 ```
 
 ## Architecture
