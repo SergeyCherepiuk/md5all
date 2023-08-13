@@ -7,10 +7,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 )
 
-const N_WORKERS uint = 16
+var N_WORKERS = runtime.GOMAXPROCS(0)
 
 type result struct {
 	path string
@@ -46,15 +47,15 @@ func checksum(paths <-chan string) <-chan result {
 	return results
 }
 
-func fanout(paths <-chan string) [N_WORKERS]<-chan result {
-	resultChannels := [N_WORKERS]<-chan result{}
-	for i := uint(0); i < N_WORKERS; i++ {
+func fanout(paths <-chan string) []<-chan result {
+	resultChannels := make([]<-chan result, N_WORKERS)
+	for i := 0; i < N_WORKERS; i++ {
 		resultChannels[i] = checksum(paths)
 	}
 	return resultChannels
 }
 
-func fanin(resultChannels [N_WORKERS]<-chan result) <-chan result {
+func fanin(resultChannels []<-chan result) <-chan result {
 	wg := sync.WaitGroup{}
 	wg.Add(len(resultChannels))
 
