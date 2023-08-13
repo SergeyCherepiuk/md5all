@@ -22,4 +22,4 @@ Inspiration for this small cli tool project is coming from this [article](https:
 
 I decided to use fan-out + fan-in techniques to split the work among `GOMAXPROCS` workers (goroutines), and while it might be an overkill for a folder with just a couple of files, it certainly speeds up the process of checksumming large directories.
 
-![Concurrency model](https://i.imgur.com/IaMT6ly.png)
+![Concurrency model](https://i.imgur.com/XVUlU5z.png)
