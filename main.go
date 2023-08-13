@@ -22,6 +22,7 @@ type result struct {
 func generatePaths(root string) <-chan string {
 	paths := make(chan string, N_WORKERS)
 	go func() {
+		defer close(paths)
 		if err := filepath.Walk(os.Args[1], func(path string, info fs.FileInfo, err error) error {
 			if err == nil && info.Mode().IsRegular() {
 				paths <- path
@@ -30,7 +31,6 @@ func generatePaths(root string) <-chan string {
 		}); err != nil {
 			log.Fatal(err)
 		}
-		close(paths)
 	}()
 	return paths
 }
@@ -38,11 +38,11 @@ func generatePaths(root string) <-chan string {
 func checksum(paths <-chan string) <-chan result {
 	results := make(chan result)
 	go func() {
+		defer close(results)
 		for path := range paths {
 			bytes, err := os.ReadFile(path)
 			results <- result{path, md5.Sum(bytes), err}
 		}
-		close(results)
 	}()
 	return results
 }
@@ -68,11 +68,11 @@ func fanin(resultChannels []<-chan result) <-chan result {
 	}
 
 	go func() {
+		defer close(results)
 		for _, ch := range resultChannels {
 			go push(ch)
 		}
 		wg.Wait()
-		close(results)
 	}()
 
 	return results
