@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-var N_WORKERS = runtime.GOMAXPROCS(0)
+var n_workers = runtime.GOMAXPROCS(0)
 
 type Result struct {
 	Path string
@@ -19,7 +19,7 @@ type Result struct {
 }
 
 func getPaths(root string) <-chan string {
-	paths := make(chan string, N_WORKERS)
+	paths := make(chan string, n_workers)
 	go func() {
 		defer close(paths)
 		if err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
@@ -47,18 +47,18 @@ func checksum(paths <-chan string) <-chan Result {
 }
 
 func fanout(paths <-chan string) []<-chan Result {
-	resultChannels := make([]<-chan Result, N_WORKERS)
-	for i := 0; i < N_WORKERS; i++ {
-		resultChannels[i] = checksum(paths)
+	workerChs := make([]<-chan Result, n_workers)
+	for i := 0; i < n_workers; i++ {
+		workerChs[i] = checksum(paths)
 	}
-	return resultChannels
+	return workerChs
 }
 
-func fanin(resultChannels []<-chan Result) <-chan Result {
+func fanin(workerChs ...<-chan Result) <-chan Result {
 	wg := sync.WaitGroup{}
-	wg.Add(len(resultChannels))
+	wg.Add(len(workerChs))
 
-	results := make(chan Result, N_WORKERS)
+	results := make(chan Result, n_workers)
 	push := func(ch <-chan Result) {
 		for r := range ch {
 			results <- r
@@ -68,7 +68,7 @@ func fanin(resultChannels []<-chan Result) <-chan Result {
 
 	go func() {
 		defer close(results)
-		for _, ch := range resultChannels {
+		for _, ch := range workerChs {
 			go push(ch)
 		}
 		wg.Wait()
@@ -77,8 +77,8 @@ func fanin(resultChannels []<-chan Result) <-chan Result {
 	return results
 }
 
-func MD5All(path string) <-chan Result {
-	paths := getPaths(path)
-	resultChannels := fanout(paths)
-	return fanin(resultChannels)
+func Sum(root string) <-chan Result {
+	paths := getPaths(root)
+	workerChs := fanout(paths)
+	return fanin(workerChs...)
 }
